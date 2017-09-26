@@ -1,30 +1,6 @@
 #!/usr/bin/python
-# this defaults to python 2 on my machine
 # (c) 2017 Treadco software.
-#
-# Regularized image sharpening library
-# 
-license =''' 
-Copyright (c) 2017  Treadco LLC, Amelia Treader, Robert W Harrison
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-'''
+# this defaults to python 2 on my machine
 
 import numpy as np
 import sys,os
@@ -73,21 +49,6 @@ def rescale(a, upper):
 #   c = b.__mul__(upper/amax)
 #   return c
 
-def jacobi_RGB( an_image, ncycles=5):
-   r,g,b = an_image.split()
-   ar = np.real(array(r))
-   ag = np.real(array(r))
-   ab = np.real(array(r))
-   rp = jacobi_step(rr,ncycles) 
-   gp = jacobi_step(gr,ncycles) 
-   bp = jacobi_step(br,ncycles) 
-   rn = Image.fromarray(np.uint8(rescale(rp,255.0)))
-   gn = Image.fromarray(np.uint8(rescale(gp,255.0)))
-   bn = Image.fromarray(np.uint8(rescale(bp,255.0)))
-   return Image.merge("RGB",(rn,gn,bn))
-
-
-
 def main():
     try:
       image = Image.open(sys.argv[1])
@@ -113,9 +74,9 @@ def main():
     rr = np.real(np.array(r))
     gr = np.real(np.array(g))
     br = np.real(np.array(b))
-    rp = jacobi_step(rr,20) 
-    gp = jacobi_step(gr,20) 
-    bp = jacobi_step(br,20) 
+    rp = jacobi_step(rr,5) 
+    gp = jacobi_step(gr,5) 
+    bp = jacobi_step(br,5) 
     rn = Image.fromarray(np.uint8(rescale(rp,255.0)))
     gn = Image.fromarray(np.uint8(rescale(gp,255.0)))
     bn = Image.fromarray(np.uint8(rescale(bp,255.0)))

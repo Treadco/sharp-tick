@@ -3,10 +3,10 @@
 # (c) 2017 Treadco software.
 #
 # Regularized image sharpening library
+#
+# MRC file version
 # 
-license =''' 
-Copyright (c) 2017  Treadco LLC, Amelia Treader, Robert W Harrison
-
+license = ''' Copyright (c) 2017  Treadco LLC, Amelia Treader, Robert W Harrison
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
@@ -31,6 +31,7 @@ import sys,os
 from PIL import Image
 from PIL import ImageChops
 from pylab import *
+import mrcfile
 
 def normalize( a ):
 # written generally
@@ -90,37 +91,46 @@ def jacobi_RGB( an_image, ncycles=5):
 
 def main():
     try:
-      image = Image.open(sys.argv[1])
+      original = mrcfile.open(sys.argv[1],mode='r')
+      output = mrcfile.open(sys.argv[2],mode='w+')
     except IOError:
-      print("Could not open the input \nUsage tick_jpg inputfile.")
+      print("Could not open the input \nUsage tick_mrc inputfile outputfile.")
       sys.exit()
 
-# have an open image right now.
-# old b&w code
-#    im = np.real(np.array(image.convert('L')))
-#    b = jacobi_step(im, 10)
-#    inew = Image.fromarray(np.uint8(rescale(im,255.0)))
-#    inew.save('before.jpg')
-#    iafter = Image.fromarray(np.uint8(rescale(b,255.0)))
-#    iafter.save('after.jpg')
-#    ix = ImageChops.subtract(iafter, inew,0.1)
-#    ix.save('difference.jpg')
-#    inew = Image.fromarray(np.uint8(rescale(generate_psf(im),255.0)))
-#    inew.save('psf.jpg')
-# 
-#    imshow(im)
-    r,g,b = image.split()
-    rr = np.real(np.array(r))
-    gr = np.real(np.array(g))
-    br = np.real(np.array(b))
-    rp = jacobi_step(rr,20) 
-    gp = jacobi_step(gr,20) 
-    bp = jacobi_step(br,20) 
-    rn = Image.fromarray(np.uint8(rescale(rp,255.0)))
-    gn = Image.fromarray(np.uint8(rescale(gp,255.0)))
-    bn = Image.fromarray(np.uint8(rescale(bp,255.0)))
-    inew = Image.merge("RGB",(rn,gn,bn))
-    inew.save('after.jpg')
-    ix = ImageChops.subtract(inew, image,0.1)
-    ix.save('difference.jpg')
+#    output.set_data(original.data)
+    output.set_data(np.float32( jacobi_step(original.data, 2)))
+# I cannot believe there isn't a method for this
+# but there isn't. FTW!
+    output.header.nx = original.header.nx
+    output.header.ny = original.header.ny
+    output.header.nz = original.header.nz
+    output.header.mode = original.header.mode
+    output.header.nxstart = original.header.nxstart
+    output.header.nystart = original.header.nystart
+    output.header.nzstart = original.header.nzstart
+    output.header.mx = original.header.mx
+    output.header.my = original.header.my
+    output.header.mz = original.header.mz
+    output.header.cella = original.header.cella
+    output.header.cellb = original.header.cellb
+    output.header.mapc = original.header.mapc
+    output.header.mapr = original.header.mapr
+    output.header.maps = original.header.maps
+    output.header.ispg = original.header.ispg
+    output.header.nsymbt = original.header.nsymbt
+    output.set_extended_header(original.extended_header)
+    output.header.exttyp = original.header.exttyp
+    output.header.nversion = original.header.nversion
+    output.header.origin = original.header.origin
+    output.header.map = original.header.map
+    output.header.machst = original.header.machst
+    output.header.rms = original.header.rms
+    output.header.nlabl = original.header.nlabl
+    output.header.label = original.header.label
+    output.close()
+
+
+
+
+
 main()
