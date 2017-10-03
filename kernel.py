@@ -87,6 +87,43 @@ def gaussian(an_image, radius):
    b = b.__div__(x)
    return b
 
+def gaussian_3d(an_image, rx,ry,rz):
+   routx = int(rx*2)
+   routy = int(ry*2)
+   routz = int(rz*2)
+   rx = rx*rx
+   ry = ry*ry
+   rz = rz*rz
+   b = np.zeros_like(np.float32(an_image))
+   for i in range(-routx,routx): 
+        ir = float(i)
+        iu = i
+        if iu < 0:
+          iu += an_image.shape[0]
+        fx = (-ir*ir/rx)
+        for j in range(-routy,routy): 
+          jr = float(j)
+          ju = j
+          if ju < 0:
+            ju += an_image.shape[1]
+          fy = (-jr*jr/ry)
+          for k in range(-routz,routz):
+            kr = float(k)
+            ku = k
+            if ku < 0:
+              ku += an_image.shape[2]
+            fz = (-kr*kr/rz)
+            b[(iu,ju,ku)] += exp(fx+fy+fz)
+#
+#  the FFT will scale by sqrt(size)
+#  the ACF uses size, but that's because it uses
+#  two FFTs so it's already sqrt(size) bigger
+#
+   x = float(an_image.size)
+   x = sqrt(x)
+   b = b.__div__(x)
+   return b
+
 # define a jacobi psf from a kernel
 def prep_kernel_for_jacobi( a):
 #   b = tick.normalize(a)
