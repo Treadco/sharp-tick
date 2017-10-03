@@ -124,6 +124,61 @@ def gaussian_3d(an_image, rx,ry,rz):
    b = b.__div__(x)
    return b
 
+def defocus(an_image, radius,alpha):
+   rout = int(radius*2)
+   alpha = alpha/radius/radius
+   b = np.zeros_like(np.float32(an_image))
+   if an_image.ndim == 2:
+     for i in range(-rout,rout): 
+        ir = float(i)
+        iu = i
+        if iu < 0:
+          iu += an_image.shape[0]
+        for j in range(-rout,rout): 
+          jr = float(j)
+          x = ir*ir+jr*jr
+          if( x > radius):
+              x = 0.
+          else:
+              x = x*alpha + 1.
+          ju = j
+          if ju < 0:
+            ju += an_image.shape[1]
+          b[(iu,ju)] += x
+   elif an_image.ndim == 3:
+     for i in range(-rout,rout): 
+        ir = float(i)
+        iu = i
+        if iu < 0:
+          iu += an_image.shape[0]
+        for j in range(-rout,rout): 
+          jr = float(j)
+          ju = j
+          if ju < 0:
+            ju += an_image.shape[1]
+          for k in range(-rout,rout):
+            kr = float(k)
+            ku = k
+            if ku < 0:
+              ku += an_image.shape[2]
+            x = ir*ir+jr*jr+kr*kr
+            if( x > radius):
+                x = 0.
+            else:
+                x = x*alpha + 1.
+
+            b[(iu,ju,ku)] += x
+#
+#  the FFT will scale by sqrt(size)
+#  the ACF uses size, but that's because it uses
+#  two FFTs so it's already sqrt(size) bigger
+#
+   x = float(an_image.size)
+   x = sqrt(x)
+   b = b.__div__(x)
+   return b
+
+
 # define a jacobi psf from a kernel
 def prep_kernel_for_jacobi( a):
 #   b = tick.normalize(a)
