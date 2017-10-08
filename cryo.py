@@ -37,6 +37,9 @@ import numpy as np
 import sys,os
 from math import exp as exp
 from math import sqrt as sqrt
+from math import sin as sin
+from math import cos as cos 
+from math import acos as acos 
 from PIL import Image
 from PIL import ImageChops
 #from pylab import *
@@ -44,10 +47,100 @@ from PIL import ImageChops
 #import tick 
 # cannot import tick methods because tick imports kernel
 
+#
+# conic
+# generate a conic section kernel to compensate for
+# the tomographic errors
+#
+#  on Y
+#  blur/defocus x
+#  z will be f(x,y)
+#
+class metric:
+   def __init__(self, nx,ny,nz, ca,cb,cc):
+#      print(ca,cb,cc)
+#      sys.stdout.flush()
+      self.fa = float(ca)/nx
+      self.fb = float(cb)/ny
+      self.fc = float(cc)/nz
+   def distance( me, dx,dy,dz):
+      dx *= me.fa
+      dy *= me.fb
+      dz *= me.fc
+      return sqrt(dx*dx + dy*dy + dz*dz)
+   def distance2( me, dx,dy,dz):
+      dx *= me.fa
+      dy *= me.fb
+      dz *= me.fc
+      return dx*dx + dy*dy + dz*dz
+   def angle_from_zaxis_rot_on_y(me,x,y,z):
+      dx = x*me.fa
+      dz = z*me.fc
+      r = sqrt( dx*dx + dz*dz)
+      if r > 0:
+         return acos(dx/r)
+      else: 
+        return 0.
+ 
+#
+# create a default metric
+# this is pixel-wise
+#
+the_metric = metric(1,1,1,1.0,1.0,1.0)
+  
+def conic( an_image, half_angle, radius, blur_radius):
+#   print( the_metric.fa, the_metric.fb,the_metric.fc)
+#   sys.stdout.flush()
+   ha = half_angle*3.14159265/180.  # not exact but close enuf 
+   b = np.zeros_like(np.float32(an_image))
+# the section is y = 0, x,z
+   rout = int(radius/max(the_metric.fa,the_metric.fc))
+   bout = int(blur_radius/the_metric.fb)
+   for ix in range(-rout,rout):
+      ixu = ix
+      if ixu < 0:
+         ixu += an_image.shape[0]
+      if ixu >= an_image.shape[0]:
+         ixu -= an_image.shape[0]
+      xr = float(ix)
+      for iz in range(-rout,rout):
+         izu = iz
+         if izu < 0:
+            izu += an_image.shape[2]
+         if izu >= an_image.shape[2]:
+            izu -= an_image.shape[2]
+         zr = float(iz)*the_metric.fa/the_metric.fc
+         r = sqrt( xr*xr + zr*zr)
+         print(ix,iz, xr,zr,r) 
+         sys.stdout.flush()
+         if r > radius:
+           continue
+         if r > 0 :
+            theta = acos(xr/r)
+         else:
+            theta = 0.
+         if theta < ha:
+               b[(ixu,0,izu)] = 1.
+               for iy in range(-bout,bout):
+                 iyu = iy
+                 if iyu < 0:
+                    iyu += an_image.shape[1]
+                 b[(ixu,iyu,izu)] = 1.
+#
+#  the FFT will scale by sqrt(size)
+#  the ACF uses size, but that's because it uses
+#  two FFTs so it's already sqrt(size) bigger
+#
+   x = float(an_image.size)
+   x = sqrt(x)
+   b = b.__idiv__(x)
+   return b
+
+              
 #Gaussian blur
 def gaussian(an_image, radius):
    sys.stdout.flush()
-   rout = int(radius*2)
+   rout = int(radius*2*max( the_metric.fa,the_metric.fb,the_metric.fc))
    radius = radius*radius
    b = np.zeros_like(np.float32(an_image))
    if an_image.ndim == 2:
@@ -92,9 +185,9 @@ def gaussian(an_image, radius):
    return b
 
 def gaussian_3d(an_image, rx,ry,rz):
-   routx = int(rx*2)
-   routy = int(ry*2)
-   routz = int(rz*2)
+   routx = int(rx*2*the_metric.fa)
+   routy = int(ry*2*the_metric.fb)
+   routz = int(rz*2*the_metric.fc)
    rx = rx*rx
    ry = ry*ry
    rz = rz*rz
@@ -129,7 +222,7 @@ def gaussian_3d(an_image, rx,ry,rz):
    return b
 
 def defocus(an_image, radius,alpha):
-   rout = int(radius*2)
+   rout = int(radius*2/max(the_metric.fa,the_metric.fb,the_metric.fc))
    alpha = alpha/radius/radius
    b = np.zeros_like(np.float32(an_image))
    if an_image.ndim == 2:
@@ -156,12 +249,12 @@ def defocus(an_image, radius,alpha):
         if iu < 0:
           iu += an_image.shape[0]
         for j in range(-rout,rout): 
-          jr = float(j)
+          jr = float(j)*the_metric.fb/the_metric.fa
           ju = j
           if ju < 0:
             ju += an_image.shape[1]
           for k in range(-rout,rout):
-            kr = float(k)
+            kr = float(k)*the_metric.fc/the_metric.fc
             ku = k
             if ku < 0:
               ku += an_image.shape[2]
