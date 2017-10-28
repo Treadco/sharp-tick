@@ -136,6 +136,160 @@ def conic( an_image, half_angle, radius, blur_radius):
    b = b.__idiv__(x)
    return b
 
+def conic_compliment( an_image,sign, half_angle, radius, blur_radius):
+#   print( the_metric.fa, the_metric.fb,the_metric.fc)
+#   sys.stdout.flush()
+   ha = half_angle*3.14159265/180.  # not exact but close enuf 
+   b = np.zeros_like(np.float32(an_image))
+# the section is y = 0, x,z
+   rout = int(radius/max(the_metric.fa,the_metric.fc))
+   bout = int(blur_radius/the_metric.fb)
+   for ix in range(-rout,rout):
+      ixu = ix
+      if ixu < 0:
+         ixu += an_image.shape[0]
+      if ixu >= an_image.shape[0]:
+         ixu -= an_image.shape[0]
+      xr = float(ix)
+      for iz in range(-rout,rout):
+         izu = iz
+         if izu < 0:
+            izu += an_image.shape[2]
+         if izu >= an_image.shape[2]:
+            izu -= an_image.shape[2]
+         zr = float(iz)*the_metric.fa/the_metric.fc
+         r = sqrt( xr*xr + zr*zr)
+         print(ix,iz, xr,zr,r) 
+         sys.stdout.flush()
+         if r > radius:
+           continue
+         if r > 0 :
+            theta = acos(xr/r)
+         else:
+            theta = 0.
+         if theta > ha:
+               b[(ixu,0,izu)] = sign 
+               for iy in range(-bout,bout):
+                 iyu = iy
+                 if iyu < 0:
+                    iyu += an_image.shape[1]
+                 b[(ixu,iyu,izu)] = sign
+#
+#  the FFT will scale by sqrt(size)
+#  the ACF uses size, but that's because it uses
+#  two FFTs so it's already sqrt(size) bigger
+#
+   x = float(an_image.size)
+   x = sqrt(x)
+   b = b.__idiv__(x)
+   return b
+
+              
+def conic_defocus( an_image, half_angle, radius, blur_radius,alpha,beta):
+#   print( the_metric.fa, the_metric.fb,the_metric.fc)
+#   sys.stdout.flush()
+   ha = half_angle*3.14159265/180.  # not exact but close enuf 
+   b = np.zeros_like(np.float32(an_image))
+# the section is y = 0, x,z
+   rout = int(radius/max(the_metric.fa,the_metric.fc))
+   bout = int(blur_radius/the_metric.fb)
+   rmax = radius*radius
+   bmax = blur_radius/the_metric.fb
+   bmax = bmax*bmax
+   for ix in range(-rout,rout):
+      ixu = ix
+      if ixu < 0:
+         ixu += an_image.shape[0]
+      if ixu >= an_image.shape[0]:
+         ixu -= an_image.shape[0]
+      xr = float(ix)
+      for iz in range(-rout,rout):
+         izu = iz
+         if izu < 0:
+            izu += an_image.shape[2]
+         if izu >= an_image.shape[2]:
+            izu -= an_image.shape[2]
+         zr = float(iz)*the_metric.fa/the_metric.fc
+         r = sqrt( xr*xr + zr*zr)
+         print(ix,iz, xr,zr,r) 
+         sys.stdout.flush()
+         if r > radius:
+           continue
+         if r > 0 :
+            theta = acos(xr/r)
+         else:
+            theta = 0.
+         if theta < ha:
+               b[(ixu,0,izu)] = 1. +alpha*(r*r/rmax) 
+               for iy in range(-bout,bout):
+                 iyu = iy
+                 if iyu < 0:
+                    iyu += an_image.shape[1]
+                 fy = float(iy)
+                 b[(ixu,iyu,izu)] = 1. + alpha*(r*r/rmax) + beta*(fy*fy/bmax)
+#
+#  the FFT will scale by sqrt(size)
+#  the ACF uses size, but that's because it uses
+#  two FFTs so it's already sqrt(size) bigger
+#
+   x = float(an_image.size)
+   x = sqrt(x)
+   b = b.__idiv__(x)
+   return b
+
+              
+def conic_compliment_defocus( an_image,sign, half_angle, radius, blur_radius,alpha,beta):
+#   print( the_metric.fa, the_metric.fb,the_metric.fc)
+#   sys.stdout.flush()
+   ha = half_angle*3.14159265/180.  # not exact but close enuf 
+   b = np.zeros_like(np.float32(an_image))
+# the section is y = 0, x,z
+   rout = int(radius/max(the_metric.fa,the_metric.fc))
+   bout = int(blur_radius/the_metric.fb)
+   rmax = radius*radius
+   bmax = blur_radius/the_metric.fb
+   bmax = bmax*bmax
+   for ix in range(-rout,rout):
+      ixu = ix
+      if ixu < 0:
+         ixu += an_image.shape[0]
+      if ixu >= an_image.shape[0]:
+         ixu -= an_image.shape[0]
+      xr = float(ix)
+      for iz in range(-rout,rout):
+         izu = iz
+         if izu < 0:
+            izu += an_image.shape[2]
+         if izu >= an_image.shape[2]:
+            izu -= an_image.shape[2]
+         zr = float(iz)*the_metric.fa/the_metric.fc
+         r = sqrt( xr*xr + zr*zr)
+         print(ix,iz, xr,zr,r) 
+         sys.stdout.flush()
+         if r > radius:
+           continue
+         if r > 0 :
+            theta = acos(xr/r)
+         else:
+            theta = 0.
+         if theta > ha:
+               b[(ixu,0,izu)] =sign*( 1. +alpha*(r*r/rmax) )
+               for iy in range(-bout,bout):
+                 iyu = iy
+                 if iyu < 0:
+                    iyu += an_image.shape[1]
+                 fy = float(iy)
+                 b[(ixu,iyu,izu)] = sign*(1. + alpha*(r*r/rmax) + beta*(fy*fy/bmax))
+#
+#  the FFT will scale by sqrt(size)
+#  the ACF uses size, but that's because it uses
+#  two FFTs so it's already sqrt(size) bigger
+#
+   x = float(an_image.size)
+   x = sqrt(x)
+   b = b.__idiv__(x)
+   return b
+
               
 #Gaussian blur
 def gaussian(an_image, radius):
@@ -254,7 +408,7 @@ def defocus(an_image, radius,alpha):
           if ju < 0:
             ju += an_image.shape[1]
           for k in range(-rout,rout):
-            kr = float(k)*the_metric.fc/the_metric.fc
+            kr = float(k)*the_metric.fc/the_metric.fa
             ku = k
             if ku < 0:
               ku += an_image.shape[2]
